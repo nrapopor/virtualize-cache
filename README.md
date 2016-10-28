@@ -11,12 +11,13 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 ### Usage Details
 
 * This utility is intended to be used from the ExtensionTool Scripts.
-* To use please add the jars found in the distribution zip to the ***Menu->Parasoft->Preferences->System Settings***. The virtualize-cache-<VERSION>.jar and all the jars in the `lib` directory of the distribution archive.
+* To use please add the jars found in the distribution zip to the ***Menu->Parasoft->Preferences->System Settings***. The virtualize-cache-\<VERSION\>.jar and all the jars in the `lib` directory of the distribution archive.
 * Cache the transactional data in the first responder in the transaction.
+* Place the key into a **cacheKey** Data Bank column. then the scripts below can be used without modification 
 
   1. Extract the transactional elements from incoming message into the appropriate **Data Bank**    
  
-  2. Add the ExtensionTool to the same responder 
+  2. Add the ExtensionTool to the same responder (Groovy sample)  
   ```groovy
   	import com.parasoft.api.*;
   	import com.parasoft.sa.virtualize.cache.*;
@@ -27,22 +28,15 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 	import java.util.regex.*;
 	
 	
-	public void saveAddress(Object o, ExtensionToolContext ctx) {
+	public void saveToCache(Object o, ExtensionToolContext ctx) {
 	
-	    Map<String,String> address = new HashMapXML<>();
-	    address.put("SCP_streetAddress1",ctx.getValue("Generated Data Source", "SCP_streetAddress1"));
-	    address.put("SCP_unitNumber",ctx.getValue("Generated Data Source", "SCP_unitNumber"));
-	    address.put("SCP_city",ctx.getValue("Generated Data Source", "SCP_city"));
-	    address.put("SCP_type",ctx.getValue("Generated Data Source", "SCP_type"));
-	    address.put("SCP_state",ctx.getValue("Generated Data Source", "SCP_state"));
-	    address.put("SCP_zipCode",ctx.getValue("Generated Data Source", "SCP_zipCode"));
-	    String sessionId = ctx.getValue("Generated Data Source", "SCP_sessionId");
-	
+		Map<String,String> all = ctx.getGeneratedDataSourceValues();
+		Map<String,String> address = new HashMapXML<>(all);	
+		String sessionId = ctx.getValue("Generated Data Source", "cacheKey");
 	    Application.showMessage("address: "+address.toString());
 	    final VirtualizeCache<Map<String, String>> cache = VirtualizeCache.getXMLMapInstance();
 	    cache.put(sessionId,address);
-	}
-  
+	}  
   ```
   * NOTE: Make sure that the extraction of data from the input is done first.
 
@@ -61,13 +55,13 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 	import java.util.regex.*;
 	
 	
-	public String getAddress(Object o, ExtensionToolContext ctx) {
+	public String getCached(Object o, ExtensionToolContext ctx) {
 	
 	   
 	    final VirtualizeCache<Map<String, String>> cache = VirtualizeCache.getXMLMapInstance();
-	    String sessionId = ctx.getValue("Generated Data Source", "SCP_sessionId");
+	    String sessionId = ctx.getValue("Generated Data Source", "cacheKey");
 	 	Map<String,String> result = cache.getIfPresent(sessionId);
-	    Application.showMessage("address: "+result.toString());
+	    Application.showMessage("found in cache: "+result.toString());
 	    return result.toString();
 	}
   
@@ -78,7 +72,7 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 
 ### Default settings
 
-The default configuration setting for the Cache are: to override add the CacheConfig.properties to the class path **before** the virtualize-cache-<Version>.jar
+The default configuration setting for the Cache are: to override add the CacheConfig.properties to the class path **before** the virtualize-cache-\<VERSION\>.jar
 
 ```properties
     VirtualizeCache.cache.eviction.msg=Key "{}" for "{}"  was removed ({})
@@ -127,11 +121,11 @@ just install java 8 and maven and run
         mklink /J C:\tools\java "C:\Program Files\Java"
         mklink /J C:\tools\java32 "C:\Program Files (x86)\Java"
  ```
-8.	We will need both Java and Maven in the PATH and JAVA_HOME and M2 and M2_HOME    
-   (also M3 and M3_HOME) set to properly run maven. 
-   - NOTE: (M3/M3_HOME may not be needed, however this was an issue at one point so I'm keeping them)
-   - You can add the following to your system environment variables and PATH or create a    
-     setenv_m3.cmd in a convenient location (one that's been added to the system path, for me it's ``c:\work\bin``
+8.	We will need both Java and Maven in the `PATH` and `JAVA_HOME` and `M2` and `M2_HOME`    
+   (also `M3` and `M3_HOME`) set to properly run maven. 
+   - NOTE: (`M3`/`M3_HOME` may not be needed any more, however this was an issue at one point so I'm keeping them)
+   - You can add the following to your system environment variables and `PATH` or create a    
+     `setenv_m3.cmd` in a convenient location (one that's been added to the system path, for me it's ``c:\work\bin``
      or simply put it into the current folder (where you checked out this project).
 
  ```cmd
@@ -154,7 +148,7 @@ just install java 8 and maven and run
 
 ### Unix or Linux systems
 
- - NOTE: Order of installs is important java then maven
+ - NOTE: Order of installs is important *java* then *maven*
  
 1.	Install Oracle JDK. on debian or ubuntu based systems you can use this script:
  ```sh
@@ -169,9 +163,9 @@ just install java 8 and maven and run
     sudo apt-get update
     sudo apt-get install oracle-java8-installer
  ```   
- - if you are not that lucky go to [oracle website](http://www.oracle.com/technetwork/java/javase/downloads/index.html "http://www.oracle.com/technetwork/java/javase/downloads/index.html")    
- and download the package appropriate for your system (rpm or tar.gz)  
-  + if rpm (put the correct version instead of ``8u92``  use the latest :
+ - if you are not that lucky, go to [oracle website](http://www.oracle.com/technetwork/java/javase/downloads/index.html "http://www.oracle.com/technetwork/java/javase/downloads/index.html")    
+ and download the package appropriate for your system (`rpm` or `tar.gz`)  
+  + if `rpm` (put the correct version below instead of ``8u92``  use the latest :
  ```sh
     ## Oracle java 1.8.0_92 ##
     sudo rpm -Uvh jdk-8u92-linux-x64.rpm
@@ -190,14 +184,14 @@ just install java 8 and maven and run
     sudo alternatives --install /usr/bin/javac javac /usr/java/latest/bin/javac 200000
     sudo alternatives --install /usr/bin/jar jar /usr/java/latest/bin/jar 200000
  ```
-  + if tar.gz (place the file in your home folder (put the correct version instead of    
+  + if `tar.gz` (place the file in your home folder (put the correct version instead of    
      ``8u92``  use the latest :
  ```sh
     ## Oracle java 1.8.0_92 ##
     tar -xvf jdk-8u92-linux-x64.tar.gz
  ```
-  + If this is your option the JAVA_HOME will be ~/jdk1.8.0_92 (or whatever the current version is)
-     add the following lines to your ~/.bashrc or .profile (replacing the ``<your user id>`` with your    
+  + If this is your option the JAVA_HOME will be `~/jdk1.8.0_92` (or whatever the current version is)
+     add the following lines to your `~/.bashrc` or `~/.profile` (replacing the ``<your user id>`` with your    
      actual user id
  ```sh
     export JAVA_HOME=/home/<your user id>/jdk1.8.0_92
@@ -213,9 +207,9 @@ just install java 8 and maven and run
  ```sh
     tar -xvf apache-maven-<version>-bin.tar.gz
  ```
-  + If this is your option the M2 will be ~/apache-maven-<version> 
-    add the following lines to your ~/.bashrc or .profile after the java lines (replacing the     
-     ``<your user id>`` with your actual user id and <version> with the actuall maven version
+  + If this is your option the `M2` will be ~/apache-maven-\<version\> 
+    add the following lines to your `~/.bashrc` or `~/.profile` after the java lines (replacing the     
+     ``<your user id>`` with your actual user id and `<version>` with the actuall maven version
  ```sh
     export M2=/home/<your user id>/apache-maven-<version>
     export M3=${M2}
@@ -226,11 +220,11 @@ just install java 8 and maven and run
    + NOTE: Ignore step 8 and any references to the ``setenv_m3.sh`` script. The settings will    
            not take effect until you logout/login again. 
          
-8.	We will need both Java and Maven in the PATH and JAVA_HOME and M2 and M2_HOME    
-   (also M3 and M3_HOME) set to properly run maven. 
- - NOTE: (M3/M3_HOME may not be needed, however this was an issue at one point so I'm keeping them)
- - You can add the following to your .profile (or .bashrc) however I do not like fixing specific versions     
-     in the initialization. place setenv_m3.sh in ``~/bin``
+8.	We will need both Java and Maven in the PATH and `JAVA_HOME` and `M2` and `M2_HOME`    
+   (also `M3` and `M3_HOME`) set to properly run maven. 
+ - NOTE: (`M3`/`M3_HOME` may not be needed, however this was an issue at one point so I'm keeping them)
+ - You can add the following to your `.profile` (or `.bashrc`) however I do not like fixing specific versions     
+     in the initialization. place `setenv_m3.sh` in ``~/bin``
      or simply put it into the current folder (where you checked out this project).
 
  ```sh
@@ -244,7 +238,7 @@ just install java 8 and maven and run
     echo JAVA_HOME=${JAVA_HOME}
  ```
 
-9.	OK enough foreplay lets get down to cases. In the checked out folder run:
+9.	OK enough foreplay, lets get down to cases. In the checked out folder run:
  ```sh
            . ~/bin/setenv_m3.sh
            mvn clean install
@@ -253,7 +247,7 @@ just install java 8 and maven and run
 ### Build Results
 
 10.	If everything goes well: 
- - The `target` folder where the project was checked out will have **virtualize-cache-<VERSION>-bin-dist.\*** and **virtualize-cache-<VERSION>.jar** files.    
+ - The `target` folder where the project was checked out will have **virtualize-cache-\<VERSION\>-bin-dist.*** and **virtualize-cache-\<VERSION\>.jar** files.    
  Pick the `bin` archive that's appropriate to the target `OS` type. and unzip it.
 
 ## Notes on this Project
@@ -278,7 +272,7 @@ AGPLv3
 ## Based On 
 
 #### Projects
-- [Caffeine - beaglebone-black-24-output-cape](https://github.com/ben-manes/caffeine/ "https://github.com/ben-manes/caffeine")
+- [Caffeine - a high performance cache implementation for Java 8](https://github.com/ben-manes/caffeine/ "https://github.com/ben-manes/caffeine")
 
 #### Date
 2016-10-27
