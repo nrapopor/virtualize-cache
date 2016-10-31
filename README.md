@@ -6,18 +6,21 @@ This project implements a simple singleton **Caffeine** cache.
 
 ## Description
 
-The intended use is the caching of transactional info in the Parasoft Virtualize. 
+The intended use is the caching of transactional info in the Parasoft Virtualize. The use of this cache implies running Virtualize with Java 1.8.
 
 ### Usage Details
 
 * This utility is intended to be used from the ExtensionTool Scripts.
 * To use please add the jars found in the distribution zip to the ***Menu->Parasoft->Preferences->System Settings***. The virtualize-cache-\<VERSION\>.jar and all the jars in the `lib` directory of the distribution archive.
 * Cache the transactional data in the first responder in the transaction.
-* Place the key into a **cacheKey** Data Bank column. then the scripts below can be used without modification 
-
-  1. Extract the transactional elements from incoming message into the appropriate **Data Bank**    
+ 1. Extract the transactional elements from incoming message into the appropriate **Data Bank**. (XML, JSON, Text, Object, etc)
  
-  2. Add the ExtensionTool to the same responder (Groovy sample)  
+    1. Place the thransaction key into a **cacheKey** Data Bank column. This way the script below can be used without modification
+   
+    2. NOTE: Make sure that the extraction of data from the input is done first.
+   
+ 2. Add the ExtensionTool to the same responder. This Groovy sample caches all extracted elements and caches them using the value     
+  of the **cacheKey**.
   ```groovy
   	import com.parasoft.api.*;
   	import com.parasoft.sa.virtualize.cache.*;
@@ -38,14 +41,14 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 	    cache.put(sessionId,address);
 	}  
   ```
-  * NOTE: Make sure that the extraction of data from the input is done first.
 
-* Extract the transactional data cached in the first responder for any subsequent responders participating in transaction.
+* Extract the transactional data cached in the first responder in any subsequent responders participating in transaction.
 
-  1. Extract the transactional key from incoming message into the appropriate **Data Bank**    
+ 1. Extract the transactional key from incoming message into the appropriate **Data Bank**, again if the **cacheKey** is     
+  used for the name no changes are required in the script below.     
  
-  2. Add the ExtensionTool to the same responder 
-  ```groovy
+ 2. Add the ExtensionTool to the same responder 
+    ```groovy
   	import com.parasoft.api.*;
   	import com.parasoft.sa.virtualize.cache.*;
 	import org.apache.commons.io.*;
@@ -54,10 +57,7 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 	import java.util.*;
 	import java.util.regex.*;
 	
-	
 	public String getCached(Object o, ExtensionToolContext ctx) {
-	
-	   
 	    final VirtualizeCache<Map<String, String>> cache = VirtualizeCache.getXMLMapInstance();
 	    String sessionId = ctx.getValue("Generated Data Source", "cacheKey");
 	 	Map<String,String> result = cache.getIfPresent(sessionId);
@@ -65,10 +65,13 @@ The intended use is the caching of transactional info in the Parasoft Virtualize
 	    return result.toString();
 	}
   
-  ```
-  * NOTE: Make sure that the extraction of data from the input is done first.
-  * Extract individual elements from the **result** XML into the **XML Data Bank**
-  * They are now ready to be used for the response message. 
+    ```
+ 3. Add an **XML Data Bank** output to this ExtensionTool
+    * Extract individual elements from the **result** XML into the **XML Data Bank**. Hint: the names will be the same as     
+    the column names used in the original responder. 
+    * They are now ready to be used in the response message. 
+    
+* If desired, the cache entry can be enriched with more elements, or replaced by any responder participating in the transaction
 
 ### Default settings
 
